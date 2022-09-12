@@ -49,8 +49,8 @@ jobs:
     - name: Deploy onto Dev
       if: github.ref == 'refs/heads/main'
       run: |
-      invoke dev.deploy-global
-      invoke dev.deploy
+        invoke dev.deploy-global
+        invoke dev.deploy
     - name: Set AWS Prod creds
       if: github.ref == 'refs/heads/production'
       uses: aws-actions/configure-aws-credentials@v1
@@ -61,5 +61,5 @@ jobs:
     - name: Deploy onto Prod
       if: github.ref == 'refs/heads/production'
       run: |
-      invoke prod.deploy-global
-      invoke prod.deploy
+        invoke prod.deploy-global
+        invoke prod.deploy
