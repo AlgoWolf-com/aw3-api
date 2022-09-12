@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import time
-from typing import Dict, List
 import boto3
 from botocore.exceptions import ClientError
 
@@ -32,11 +31,11 @@ def handler(event, _):
             try:
                 cfn_client.describe_stacks(StackName=stack_name)
                 cfn_client.delete_stack(StackName=stack_name)
-            except ClientError as e:
-                if e.response["Error"]["Code"] == "ValidationError":
+            except ClientError as err:
+                if err.response["Error"]["Code"] == "ValidationError":
                     # Stack already deleted
                     ssm_client.delete_parameter(Name=param["Name"])
                 else:
-                    raise e
+                    raise err
 
     return {"message": "success"}
