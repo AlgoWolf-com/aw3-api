@@ -15,13 +15,14 @@ def build(ctx, template):
 
 @task
 def deploy_global(ctx, profile=None):
-    if profile is None:
-        raise AssertionError("must include profile parameter")
+    profile_str = ""
+    if profile is not None:
+        profile_str = f"--profile {profile} "
 
     build(ctx, "infrastructure/global-template.yaml")
     ctx.run(
         "sam deploy "
-        f"--profile {profile} "
+        f"{profile_str}"
         f"--stack-name aw3-global "
         f"--s3-bucket sam-$(aws sts get-caller-identity --profile {profile} --no-cli-pager --query Account --output text) "
         f"--s3-prefix aw3-global "
@@ -38,8 +39,9 @@ def deploy(ctx, profile=None, feature_name="", ttl="0"):
     stack_name = f"{ctx.ENV_NAME}"
     env_name = ctx.ENV_NAME
 
-    if profile is None:
-        raise AssertionError("must include profile parameter")
+    profile_str = ""
+    if profile is not None:
+        profile_str = f"--profile {profile} "
 
     if ctx.COLLECTION_NAME == "feature":
         if not feature_name:
@@ -60,7 +62,7 @@ def deploy(ctx, profile=None, feature_name="", ttl="0"):
     build(ctx, "infrastructure/template.yaml")
     ctx.run(
         "sam deploy "
-        f"--profile {profile} "
+        f"{profile_str}"
         f"--stack-name {stack_name} "
         f"--s3-bucket sam-$(aws sts get-caller-identity --profile {profile} --no-cli-pager --query Account --output text) "
         f"--s3-prefix {stack_name} "
