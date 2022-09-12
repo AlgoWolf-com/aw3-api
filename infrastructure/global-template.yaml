@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aw3-api
+
+  AlgoWolf v3 global template
+
+Globals:
+  Function:
+    Architectures:
+      - x86_64
+    Timeout: 30
+    DeploymentPreference:
+      Type: AllAtOnce
+    Tracing: Active
+    Tags:
+      Owner: "Ethan Hollins"
+      Environment: aw3-global
+
+Resources:
+  DeleteExpiredStacksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      AutoPublishAlias: live
+      Role: !GetAtt DeleteExpiredStacksFunctionRole.Arn
+    Metadata:
+      DockerContext: ../
+      Dockerfile: ./global/delete_expired_stacks/Dockerfile
+
+  DeleteExpiredStacksRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: DeleteExpiredStacksRule
+      Description: Scheduled event deleting expired cfn stacks
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt DeleteExpiredStacksFunction.Arn
+          Id: DeleteExpiredStacksFunctionTarget
+      ScheduleExpression: "rate(24 hours)"
+
+  DeleteExpiredStacksFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies: 
+        - PolicyName: DeleteExpiredStacksFunctionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "ssm:GetParametersByPath"
+                  - "ssm:DeleteParameter"
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:DeleteStack"
+                Resource: "*"
