@@ -48,7 +48,9 @@ jobs:
         aws-region: ap-southeast-2
     - name: Deploy onto Dev
       if: github.ref == 'refs/heads/main'
-      run: invoke dev.deploy
+      run: |
+        invoke dev.deploy-global
+        invoke dev.deploy
     - name: Set AWS Prod creds
       if: github.ref == 'refs/heads/production'
       uses: aws-actions/configure-aws-credentials@v1
@@ -58,4 +60,6 @@ jobs:
         aws-region: ap-southeast-2
     - name: Deploy onto Prod
       if: github.ref == 'refs/heads/production'
-      run: invoke prod.deploy
+      run: |
+        invoke prod.deploy-global
+        invoke prod.deploy
