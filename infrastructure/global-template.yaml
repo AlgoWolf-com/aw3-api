@@ -26,7 +26,7 @@ Resources:
       Role: !GetAtt DeleteExpiredStacksFunctionRole.Arn
     Metadata:
       DockerContext: ../
-      Dockerfile: ./global/delete_expired_stacks/Dockerfile
+      Dockerfile: ./misc/delete_expired_stacks/Dockerfile
 
   DeleteExpiredStacksRule:
     Type: AWS::Events::Rule
@@ -56,6 +56,12 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
               - Effect: Allow
                 Action: 
                   - "ssm:GetParametersByPath"
