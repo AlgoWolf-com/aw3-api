@@ -1,4 +1,4 @@
-ARG FUNCTION_DIR=global/delete_expired_stacks
+ARG FUNCTION_DIR=misc/delete_expired_stacks
 
 FROM public.ecr.aws/lambda/python:3.9 AS build-image
 

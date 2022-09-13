@@ -5,6 +5,18 @@ Description: >
 
   AlgoWolf v3 copy trading application
 
+Globals:
+  Function:
+    Architectures:
+      - x86_64
+    Timeout: 30
+    DeploymentPreference:
+      Type: AllAtOnce
+    Tracing: Active
+    Tags:
+      Owner: "Ethan Hollins"
+      Environment: !Ref EnvironmentName
+
 Parameters:
   EnvironmentName:
     Type: String
@@ -13,11 +25,18 @@ Parameters:
   TTL:
     Type: String
     Default: 0
+  ProdDomainName:
+    Type: String
+    Default: algowolf.com
+  DevDomainName:
+    Type: String
+    Default: ethanhollins.com
 
 Conditions:
   IsProd: !Equals [!Ref EnvironmentName, aw3-prod]
   IsDev: !Equals [!Ref EnvironmentName, aw3-dev]
-  IsFeature: !Not [!Or [!Condition IsProd, !Condition IsDev]]
+  IsProdOrDev: !Or [!Condition IsProd, !Condition IsDev]
+  IsFeature: !Not [!Condition IsProdOrDev]
 
 Resources:
   StackTTL:
@@ -27,3 +46,63 @@ Resources:
       Name: !Sub /aw3/cfn/ttl/${AWS::StackName}
       Type: String
       Value: !Ref TTL
+
+  UpdateNameServersFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsProdOrDev
+    Properties:
+      PackageType: Image
+      AutoPublishAlias: live
+      Role: !GetAtt UpdateNameServersRole.Arn
+    Metadata:
+      DockerContext: ../
+      Dockerfile: ./misc/update_name_servers/Dockerfile
+
+  AlgowolfHostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: IsProdOrDev
+    Properties:
+      Name: !If
+        - IsProd
+        - !Ref ProdDomainName
+        - !Ref DevDomainName
+
+  AlgowolfUpdateNameServers:
+    Type: Custom::AlgowolfUpdateNameServers
+    Condition: IsProdOrDev
+    Properties:
+      ServiceToken: !GetAtt UpdateNameServersFunction.Arn
+      NameServers: !GetAtt AlgowolfHostedZone.NameServers
+      DomainName: !If
+        - IsProd
+        - !Ref ProdDomainName
+        - !Ref DevDomainName
+
+  UpdateNameServersRole:
+    Type: AWS::IAM::Role
+    Condition: IsProdOrDev
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies: 
+        - PolicyName: UpdateNameServersPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - "route53domains:UpdateDomainNameservers"
+                Resource: "*"
